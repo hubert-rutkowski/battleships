@@ -367,8 +367,8 @@ int main() {
                 do {
                     x = rand() % BOARD_SIZE;
                     y = rand() % BOARD_SIZE;
-                } while (already_shot(&player_board, x, y));
-                bool is_hit = take_shot(&player_board, x, y);
+                } while (already_shot(&computer_board, x, y));
+                bool is_hit = take_shot(&computer_board, x, y);
                 animate_hit_miss(renderer, x, y, is_hit, 0, 0);
                 player_turn = true;
             }
