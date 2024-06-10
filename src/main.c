@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
@@ -27,7 +28,7 @@ void init_board(Board* board) {
     board->ships_placed = 0;
 }
 
-void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset_y) {
+void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset_y, bool hide_ships) {
     for (int i = 0; i < BOARD_SIZE; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
             SDL_Rect cell_rect = { offset_x + j * CELL_SIZE, offset_y + i * CELL_SIZE, CELL_SIZE, CELL_SIZE };
@@ -36,7 +37,11 @@ void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset
                     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue for water
                     break;
                 case SHIP:
-                    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green for ships
+                    if (hide_ships) {
+                        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue for hidden ships
+                    } else {
+                        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green for ships
+                    }
                     break;
                 case HIT:
                     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red for hits
@@ -76,7 +81,7 @@ bool take_shot(Board* board, int x, int y) {
     return false;
 }
 
-void random_place_ship(Board* board, int ship_size) {
+void random_place_ship(Board* board, int ship_size, FILE* file) {
     bool placed = false;
     while (!placed) {
         int x = rand() % BOARD_SIZE;
@@ -95,6 +100,7 @@ void random_place_ship(Board* board, int ship_size) {
                 if (can_place) {
                     for (int i = 0; i < ship_size; ++i) {
                         board->cells[y][x + i] = SHIP;
+                        fprintf(file, "%d %d\n", y, x + i);
                     }
                     placed = true;
                 }
@@ -110,6 +116,7 @@ void random_place_ship(Board* board, int ship_size) {
                 if (can_place) {
                     for (int i = 0; i < ship_size; ++i) {
                         board->cells[y + i][x] = SHIP;
+                        fprintf(file, "%d %d\n", y + i, x);
                     }
                     placed = true;
                 }
@@ -119,10 +126,22 @@ void random_place_ship(Board* board, int ship_size) {
 }
 
 void place_computer_ships(Board* board) {
-    random_place_ship(board, 4); // One ship of size 4
-    random_place_ship(board, 3); // Two ships of size 3
-    random_place_ship(board, 3);
+    FILE* file = fopen("computer_ships.txt", "w");
+    if (file == NULL) {
+        printf("Error opening file for writing.\n");
+        exit(1);
+    }
+
+    random_place_ship(board, 4, file); // One ship of size 4
+    random_place_ship(board, 3, file); // Two ships of size 3
+    random_place_ship(board, 3, file);
     board->ships_placed = MAX_SHIPS; // Assuming MAX_SHIPS = 10 for simplicity
+
+    fclose(file);
+}
+
+bool already_shot(Board* board, int x, int y) {
+    return board->cells[y][x] == HIT || board->cells[y][x] == MISS;
 }
 
 int main() {
@@ -156,6 +175,8 @@ int main() {
 
     bool quit = false;
     bool player_turn = true;
+    bool game_over = false;
+    char winner[50] = "";
 
     while (!quit) {
         SDL_Event event;
@@ -179,10 +200,13 @@ int main() {
             }
         }
 
-        if (!player_turn && player_board.ships_placed == MAX_SHIPS) {
+        if (!player_turn && player_board.ships_placed == MAX_SHIPS && !game_over) {
             // Computer's turn to take a shot
-            int x = rand() % BOARD_SIZE;
-            int y = rand() % BOARD_SIZE;
+            int x, y;
+            do {
+                x = rand() % BOARD_SIZE;
+                y = rand() % BOARD_SIZE;
+            } while (already_shot(&player_board, x, y));
             if (take_shot(&player_board, x, y)) {
                 player_turn = true; // Switch back to player's turn
             }
@@ -191,13 +215,20 @@ int main() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        render_board(renderer, &player_board, 0, 0);
-        render_board(renderer, &computer_board, SCREEN_WIDTH / 2, 0);
+        render_board(renderer, &player_board, 0, 0, false);
+        render_board(renderer, &computer_board, SCREEN_WIDTH / 2, 0, true);
 
         SDL_RenderPresent(renderer);
 
         // Check for game over
         if (player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
+            game_over = true;
+            if (player_board.ships_remaining == 0) {
+                snprintf(winner, sizeof(winner), "Computer wins!");
+            } else {
+                snprintf(winner, sizeof(winner), "Player wins!");
+            }
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Game Over", winner, window);
             quit = true;
         }
     }
