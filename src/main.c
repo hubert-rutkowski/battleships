@@ -338,7 +338,7 @@ int main() {
 
             SDL_RenderPresent(renderer);
 
-            if (game_state == PLAYING && player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
+            if (game_state == PLAYING && (player_board.ships_remaining == 0 || computer_board.ships_remaining == 0)) {
                 game_over = true;
                 if (player_board.ships_remaining == 0) {
                     snprintf(winner, sizeof(winner), "Computer wins!");
