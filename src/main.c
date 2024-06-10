@@ -24,7 +24,7 @@ void init_board(Board* board) {
             board->cells[i][j] = EMPTY;
         }
     }
-    board->ships_remaining = 10; // Example number of ships
+    board->ships_remaining = MAX_SHIPS; // Example number of ships
     board->ships_placed = 0;
 }
 
@@ -81,46 +81,49 @@ bool take_shot(Board* board, int x, int y) {
     return false;
 }
 
+bool already_shot(Board* board, int x, int y) {
+    return board->cells[y][x] == HIT || board->cells[y][x] == MISS;
+}
+
+bool can_place_ship(Board* board, int x, int y, int size, bool horizontal) {
+    if (horizontal) {
+        if (x + size > BOARD_SIZE) return false;
+        for (int i = 0; i < size; ++i) {
+            if (board->cells[y][x + i] != EMPTY) return false;
+        }
+    } else {
+        if (y + size > BOARD_SIZE) return false;
+        for (int i = 0; i < size; ++i) {
+            if (board->cells[y + i][x] != EMPTY) return false;
+        }
+    }
+    return true;
+}
+
+void place_ship_at(Board* board, int x, int y, int size, bool horizontal, FILE* file) {
+    if (horizontal) {
+        for (int i = 0; i < size; ++i) {
+            board->cells[y][x + i] = SHIP;
+            fprintf(file, "%d %d\n", y, x + i);
+        }
+    } else {
+        for (int i = 0; i < size; ++i) {
+            board->cells[y + i][x] = SHIP;
+            fprintf(file, "%d %d\n", y + i, x);
+        }
+    }
+}
+
 void random_place_ship(Board* board, int ship_size, FILE* file) {
     bool placed = false;
     while (!placed) {
         int x = rand() % BOARD_SIZE;
         int y = rand() % BOARD_SIZE;
         bool horizontal = rand() % 2;
-        bool can_place = true;
 
-        if (horizontal) {
-            if (x + ship_size <= BOARD_SIZE) {
-                for (int i = 0; i < ship_size; ++i) {
-                    if (board->cells[y][x + i] != EMPTY) {
-                        can_place = false;
-                        break;
-                    }
-                }
-                if (can_place) {
-                    for (int i = 0; i < ship_size; ++i) {
-                        board->cells[y][x + i] = SHIP;
-                        fprintf(file, "%d %d\n", y, x + i);
-                    }
-                    placed = true;
-                }
-            }
-        } else {
-            if (y + ship_size <= BOARD_SIZE) {
-                for (int i = 0; i < ship_size; ++i) {
-                    if (board->cells[y + i][x] != EMPTY) {
-                        can_place = false;
-                        break;
-                    }
-                }
-                if (can_place) {
-                    for (int i = 0; i < ship_size; ++i) {
-                        board->cells[y + i][x] = SHIP;
-                        fprintf(file, "%d %d\n", y + i, x);
-                    }
-                    placed = true;
-                }
-            }
+        if (can_place_ship(board, x, y, ship_size, horizontal)) {
+            place_ship_at(board, x, y, ship_size, horizontal, file);
+            placed = true;
         }
     }
 }
@@ -135,13 +138,13 @@ void place_computer_ships(Board* board) {
     random_place_ship(board, 4, file); // One ship of size 4
     random_place_ship(board, 3, file); // Two ships of size 3
     random_place_ship(board, 3, file);
+    random_place_ship(board, 2, file); // Four ships of size 2
+    random_place_ship(board, 2, file);
+    random_place_ship(board, 2, file);
+    random_place_ship(board, 2, file);
     board->ships_placed = MAX_SHIPS; // Assuming MAX_SHIPS = 10 for simplicity
 
     fclose(file);
-}
-
-bool already_shot(Board* board, int x, int y) {
-    return board->cells[y][x] == HIT || board->cells[y][x] == MISS;
 }
 
 int main() {
