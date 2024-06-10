@@ -27,7 +27,7 @@ void init_board(Board* board) {
             board->cells[i][j] = EMPTY;
         }
     }
-    board->ships_remaining = MAX_SHIPS; // Example number of ships
+    board->ships_remaining = MAX_SHIPS;
     board->ships_placed = 0;
 }
 
@@ -37,20 +37,20 @@ void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset
             SDL_Rect cell_rect = { offset_x + j * CELL_SIZE, offset_y + i * CELL_SIZE, CELL_SIZE, CELL_SIZE };
             switch (board->cells[i][j]) {
                 case EMPTY:
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue for water
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                     break;
                 case SHIP:
                     if (hide_ships) {
-                        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue for hidden ships
+                        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
                     } else {
-                        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green for ships
+                        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
                     }
                     break;
                 case HIT:
-                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red for hits
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
                     break;
                 case MISS:
-                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White for misses
+                    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                     break;
             }
             SDL_RenderFillRect(renderer, &cell_rect);
@@ -153,27 +153,27 @@ void place_computer_ships(Board* board) {
         exit(1);
     }
 
-    random_place_ship(board, 4, file); // One ship of size 4
-    random_place_ship(board, 3, file); // Two ships of size 3
+    random_place_ship(board, 4, file);
     random_place_ship(board, 3, file);
-    random_place_ship(board, 2, file); // Four ships of size 2
+    random_place_ship(board, 3, file);
     random_place_ship(board, 2, file);
     random_place_ship(board, 2, file);
     random_place_ship(board, 2, file);
-    board->ships_placed = MAX_SHIPS; // Assuming MAX_SHIPS = 10 for simplicity
+    random_place_ship(board, 2, file);
+    board->ships_placed = MAX_SHIPS;
 
     fclose(file);
 }
 
-void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit) {
-    SDL_Rect rect = { x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
-    SDL_Color color = is_hit ? (SDL_Color){255, 0, 0, 255} : (SDL_Color){255, 255, 255, 255}; // Red for hit, White for miss
+void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit, int offset_x, int offset_y) {
+    SDL_Rect rect = { offset_x + x * CELL_SIZE, offset_y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+    SDL_Color color = is_hit ? (SDL_Color){255, 0, 0, 255} : (SDL_Color){255, 255, 255, 255};
 
     for (int i = 0; i < 5; ++i) {
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
         SDL_RenderFillRect(renderer, &rect);
         SDL_RenderPresent(renderer);
-        SDL_Delay(100); // Delay for animation effect
+        SDL_Delay(100);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderFillRect(renderer, &rect);
@@ -214,8 +214,16 @@ void render_menu(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_RenderPresent(renderer);
 }
 
+void render_save_button(SDL_Renderer* renderer, TTF_Font* font) {
+    render_text(renderer, font, "Save and Exit", 10, SCREEN_HEIGHT - 30);
+}
+
+bool handle_save_button(int mouse_x, int mouse_y) {
+    return mouse_x >= 10 && mouse_x <= 150 && mouse_y >= SCREEN_HEIGHT - 30 && mouse_y <= SCREEN_HEIGHT;
+}
+
 int main() {
-    srand(time(NULL)); // Initialize random seed
+    srand(time(NULL));
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Cannot initialize SDL: %s", SDL_GetError());
@@ -281,15 +289,21 @@ int main() {
             } else if (event.type == SDL_MOUSEBUTTONDOWN && game_state == PLAYING) {
                 int x = event.button.x / CELL_SIZE;
                 int y = event.button.y / CELL_SIZE;
-                if (player_turn) {
-                    if (player_board.ships_placed < MAX_SHIPS) {
-                        if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
-                            player_turn = false; // Switch to computer's turn after placing all ships
+
+                if (handle_save_button(event.button.x, event.button.y)) {
+                    save_game(&player_board, &computer_board);
+                    quit = true;
+                } else if (y < BOARD_SIZE) {
+                    if (player_turn) {
+                        if (player_board.ships_placed < MAX_SHIPS) {
+                            if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
+                                player_turn = false;
+                            }
+                        } else {
+                            bool is_hit = take_shot(&computer_board, x - (SCREEN_WIDTH / 2) / CELL_SIZE, y);
+                            animate_hit_miss(renderer, x, y, is_hit, 0, 0);
+                            player_turn = false;
                         }
-                    } else {
-                        bool is_hit = take_shot(&computer_board, x - (SCREEN_WIDTH / 2) / CELL_SIZE, y);
-                        animate_hit_miss(renderer, x, y, is_hit);
-                        player_turn = false; // Switch to computer's turn
                     }
                 }
             }
@@ -299,15 +313,14 @@ int main() {
             render_menu(renderer, font);
         } else if (game_state == PLAYING) {
             if (!player_turn && player_board.ships_placed == MAX_SHIPS && !game_over) {
-                // Computer's turn to take a shot
                 int x, y;
                 do {
                     x = rand() % BOARD_SIZE;
                     y = rand() % BOARD_SIZE;
                 } while (already_shot(&player_board, x, y));
                 bool is_hit = take_shot(&player_board, x, y);
-                animate_hit_miss(renderer, x + (SCREEN_WIDTH / 2) / CELL_SIZE, y, is_hit);
-                player_turn = true; // Switch back to player's turn
+                animate_hit_miss(renderer, x, y, is_hit, SCREEN_WIDTH / 2, 0);
+                player_turn = true;
             }
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -327,9 +340,10 @@ int main() {
             render_text(renderer, font, player_ships, 10, SCREEN_HEIGHT - 30);
             render_text(renderer, font, computer_ships, SCREEN_WIDTH / 2 + 10, SCREEN_HEIGHT - 30);
 
+            render_save_button(renderer, font);
+
             SDL_RenderPresent(renderer);
 
-            // Check for game over
             if (player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
                 game_over = true;
                 if (player_board.ships_remaining == 0) {
