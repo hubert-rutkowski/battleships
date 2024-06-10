@@ -5,12 +5,14 @@
 #define SCREEN_HEIGHT 480
 #define CELL_SIZE 40
 #define BOARD_SIZE 10
+#define MAX_SHIPS 10
 
 typedef enum { EMPTY, SHIP, HIT, MISS } Cell;
 
 typedef struct {
     Cell cells[BOARD_SIZE][BOARD_SIZE];
     int ships_remaining;
+    int ships_placed;
 } Board;
 
 void init_board(Board* board) {
@@ -20,6 +22,7 @@ void init_board(Board* board) {
         }
     }
     board->ships_remaining = 5; // Example number of ships
+    board->ships_placed = 0;
 }
 
 void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset_y) {
@@ -48,10 +51,11 @@ void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset
 }
 
 bool place_ship(Board* board, int x, int y) {
-    if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE || board->cells[y][x] != EMPTY) {
+    if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE || board->cells[y][x] != EMPTY || board->ships_placed >= MAX_SHIPS) {
         return false;
     }
     board->cells[y][x] = SHIP;
+    board->ships_placed++;
     return true;
 }
 
@@ -107,7 +111,9 @@ int main() {
                 int x = event.button.x / CELL_SIZE;
                 int y = event.button.y / CELL_SIZE;
                 if (player_turn) {
-                    place_ship(&player_board, x, y);
+                    if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
+                        player_turn = false;
+                    }
                 } else {
                     take_shot(&computer_board, x, y);
                 }
