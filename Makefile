@@ -1,6 +1,5 @@
 # Makefile for a C project
 # ---------------------------------
-# ...
 
 # Compiler and compiler flags
 CC = gcc
@@ -14,7 +13,7 @@ check_mode:
 ifeq ($(filter $(MODE),debug release),)
 	$(error MODE must be set to either debug or release)
 else
-# Null operation prevents message "Nothing to be done" when MODE is set proprerly
+# Null operation prevents message "Nothing to be done" when MODE is set properly
 	@: 
 endif
 
@@ -49,7 +48,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 # Rule to link object files into the final executable
 $(TARGET): $(OBJ_FILES)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $^ -o $@ -lSDL2
+	$(CC) $(CFLAGS) $^ -o $@ -lSDL2 -lSDL2_ttf
 
 # Clean target removes all generated files
 clean:
