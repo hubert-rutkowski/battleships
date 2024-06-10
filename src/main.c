@@ -215,11 +215,11 @@ void render_menu(SDL_Renderer* renderer, TTF_Font* font) {
 }
 
 void render_save_button(SDL_Renderer* renderer, TTF_Font* font) {
-    render_text(renderer, font, "Save and Exit", 10, SCREEN_HEIGHT - 30);
+    render_text(renderer, font, "Save and Exit", 10, SCREEN_HEIGHT - 50); // Position the button below the scoreboard
 }
 
 bool handle_save_button(int mouse_x, int mouse_y) {
-    return mouse_x >= 10 && mouse_x <= 150 && mouse_y >= SCREEN_HEIGHT - 30 && mouse_y <= SCREEN_HEIGHT;
+    return mouse_x >= 10 && mouse_x <= 150 && mouse_y >= SCREEN_HEIGHT - 50 && mouse_y <= SCREEN_HEIGHT - 20;
 }
 
 int main() {
@@ -337,8 +337,8 @@ int main() {
             snprintf(player_ships, sizeof(player_ships), "Player Ships Remaining: %d", player_board.ships_remaining);
             snprintf(computer_ships, sizeof(computer_ships), "Computer Ships Remaining: %d", computer_board.ships_remaining);
 
-            render_text(renderer, font, player_ships, 10, SCREEN_HEIGHT - 30);
-            render_text(renderer, font, computer_ships, SCREEN_WIDTH / 2 + 10, SCREEN_HEIGHT - 30);
+            render_text(renderer, font, player_ships, 10, SCREEN_HEIGHT - 70);
+            render_text(renderer, font, computer_ships, SCREEN_WIDTH / 2 + 10, SCREEN_HEIGHT - 70);
 
             render_save_button(renderer, font);
 
