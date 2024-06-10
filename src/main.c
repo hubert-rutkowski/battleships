@@ -169,17 +169,14 @@ void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit, int off
     SDL_Rect rect = { offset_x + x * CELL_SIZE, offset_y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
     SDL_Color color = is_hit ? (SDL_Color){255, 0, 0, 255} : (SDL_Color){255, 255, 255, 255};
 
-    for (int i = 0; i < 5; ++i) {
-        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-        SDL_RenderFillRect(renderer, &rect);
-        SDL_RenderPresent(renderer);
-        SDL_Delay(100);
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &rect);
-        SDL_RenderPresent(renderer);
-        SDL_Delay(100);
-    }
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_RenderPresent(renderer);
+    SDL_Delay(100);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_RenderPresent(renderer);
+    SDL_Delay(100);
 }
 
 void save_game(Board* player_board, Board* computer_board) {
@@ -215,7 +212,7 @@ void render_menu(SDL_Renderer* renderer, TTF_Font* font) {
 }
 
 void render_save_button(SDL_Renderer* renderer, TTF_Font* font) {
-    render_text(renderer, font, "Save and Exit", 10, SCREEN_HEIGHT - 50); // Position the button below the scoreboard
+    render_text(renderer, font, "Save and Exit", 10, SCREEN_HEIGHT - 50);
 }
 
 bool handle_save_button(int mouse_x, int mouse_y) {
@@ -293,7 +290,7 @@ int main() {
                 if (handle_save_button(event.button.x, event.button.y)) {
                     save_game(&player_board, &computer_board);
                     quit = true;
-                } else if (y < BOARD_SIZE) {
+                } else if (x >= BOARD_SIZE / 2 / CELL_SIZE) { // Ensure player cannot shoot on their own board
                     if (player_turn) {
                         if (player_board.ships_placed < MAX_SHIPS) {
                             if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
@@ -301,7 +298,7 @@ int main() {
                             }
                         } else {
                             bool is_hit = take_shot(&computer_board, x - (SCREEN_WIDTH / 2) / CELL_SIZE, y);
-                            animate_hit_miss(renderer, x, y, is_hit, 0, 0);
+                            animate_hit_miss(renderer, x, y, is_hit, SCREEN_WIDTH / 2, 0);
                             player_turn = false;
                         }
                     }
@@ -319,7 +316,7 @@ int main() {
                     y = rand() % BOARD_SIZE;
                 } while (already_shot(&player_board, x, y));
                 bool is_hit = take_shot(&player_board, x, y);
-                animate_hit_miss(renderer, x, y, is_hit, SCREEN_WIDTH / 2, 0);
+                animate_hit_miss(renderer, x, y, is_hit, 0, 0);
                 player_turn = true;
             }
 
