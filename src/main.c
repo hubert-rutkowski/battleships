@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
@@ -21,7 +23,7 @@ void init_board(Board* board) {
             board->cells[i][j] = EMPTY;
         }
     }
-    board->ships_remaining = 5; // Example number of ships
+    board->ships_remaining = 10; // Example number of ships
     board->ships_placed = 0;
 }
 
@@ -74,7 +76,58 @@ bool take_shot(Board* board, int x, int y) {
     return false;
 }
 
+void random_place_ship(Board* board, int ship_size) {
+    bool placed = false;
+    while (!placed) {
+        int x = rand() % BOARD_SIZE;
+        int y = rand() % BOARD_SIZE;
+        bool horizontal = rand() % 2;
+        bool can_place = true;
+
+        if (horizontal) {
+            if (x + ship_size <= BOARD_SIZE) {
+                for (int i = 0; i < ship_size; ++i) {
+                    if (board->cells[y][x + i] != EMPTY) {
+                        can_place = false;
+                        break;
+                    }
+                }
+                if (can_place) {
+                    for (int i = 0; i < ship_size; ++i) {
+                        board->cells[y][x + i] = SHIP;
+                    }
+                    placed = true;
+                }
+            }
+        } else {
+            if (y + ship_size <= BOARD_SIZE) {
+                for (int i = 0; i < ship_size; ++i) {
+                    if (board->cells[y + i][x] != EMPTY) {
+                        can_place = false;
+                        break;
+                    }
+                }
+                if (can_place) {
+                    for (int i = 0; i < ship_size; ++i) {
+                        board->cells[y + i][x] = SHIP;
+                    }
+                    placed = true;
+                }
+            }
+        }
+    }
+}
+
+void place_computer_ships(Board* board) {
+    random_place_ship(board, 4); // One ship of size 4
+    random_place_ship(board, 3); // Two ships of size 3
+    random_place_ship(board, 3);
+    board->ships_placed = MAX_SHIPS; // Assuming MAX_SHIPS = 10 for simplicity
+}
+
 int main() {
+    srand(time(NULL)); // Initialize random seed
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Cannot initialize SDL: %s", SDL_GetError());
         return 1;
@@ -99,6 +152,8 @@ int main() {
     init_board(&player_board);
     init_board(&computer_board);
 
+    place_computer_ships(&computer_board);
+
     bool quit = false;
     bool player_turn = true;
 
@@ -111,12 +166,25 @@ int main() {
                 int x = event.button.x / CELL_SIZE;
                 int y = event.button.y / CELL_SIZE;
                 if (player_turn) {
-                    if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
-                        player_turn = false;
+                    if (player_board.ships_placed < MAX_SHIPS) {
+                        if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
+                            player_turn = false; // Switch to computer's turn after placing all ships
+                        }
+                    } else {
+                        if (take_shot(&computer_board, x - (SCREEN_WIDTH / 2) / CELL_SIZE, y)) {
+                            player_turn = false; // Switch to computer's turn
+                        }
                     }
-                } else {
-                    take_shot(&computer_board, x, y);
                 }
+            }
+        }
+
+        if (!player_turn && player_board.ships_placed == MAX_SHIPS) {
+            // Computer's turn to take a shot
+            int x = rand() % BOARD_SIZE;
+            int y = rand() % BOARD_SIZE;
+            if (take_shot(&player_board, x, y)) {
+                player_turn = true; // Switch back to player's turn
             }
         }
 
@@ -127,6 +195,11 @@ int main() {
         render_board(renderer, &computer_board, SCREEN_WIDTH / 2, 0);
 
         SDL_RenderPresent(renderer);
+
+        // Check for game over
+        if (player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
+            quit = true;
+        }
     }
 
     SDL_DestroyRenderer(renderer);
