@@ -19,7 +19,7 @@ typedef struct {
     int ships_placed;
 } Board;
 
-typedef enum { MENU, PLAYING } GameState;
+typedef enum { MENU, PLACING_SHIPS, PLAYING } GameState;
 
 void init_board(Board* board) {
     for (int i = 0; i < BOARD_SIZE; ++i) {
@@ -283,12 +283,18 @@ int main() {
                 if (game_state == MENU) {
                     int selection = handle_menu_click(event.button.x, event.button.y);
                     if (selection == 1) {
-                        game_state = PLAYING;
+                        game_state = PLACING_SHIPS;
                         init_board(&player_board);
                         init_board(&computer_board);
                         place_computer_ships(&computer_board);
                     } else if (selection == 2) {
                         if (load_game(&player_board, &computer_board)) {
+                            game_state = PLACING_SHIPS;
+                        }
+                    }
+                } else if (game_state == PLACING_SHIPS) {
+                    if (player_board.ships_placed < MAX_SHIPS && x < BOARD_SIZE && y < BOARD_SIZE) {
+                        if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
                             game_state = PLAYING;
                         }
                     }
@@ -296,9 +302,9 @@ int main() {
                     if (handle_save_button(event.button.x, event.button.y)) {
                         save_game(&player_board, &computer_board);
                         quit = true;
-                    } else if (event.button.x >= SCREEN_WIDTH / 2) { // Ensure player cannot shoot on their own board
+                    } else if (event.button.x >= SCREEN_WIDTH / 2 && y < BOARD_SIZE) {
                         x = (event.button.x - SCREEN_WIDTH / 2) / CELL_SIZE;
-                        if (player_turn && player_board.ships_placed == MAX_SHIPS && y < BOARD_SIZE) {
+                        if (player_turn) {
                             bool is_hit = take_shot(&computer_board, x, y);
                             animate_hit_miss(renderer, x, y, is_hit, SCREEN_WIDTH / 2, 0);
                             player_turn = false;
@@ -310,18 +316,7 @@ int main() {
 
         if (game_state == MENU) {
             render_menu(renderer, font);
-        } else if (game_state == PLAYING) {
-            if (!player_turn && player_board.ships_placed == MAX_SHIPS && !game_over) {
-                int x, y;
-                do {
-                    x = rand() % BOARD_SIZE;
-                    y = rand() % BOARD_SIZE;
-                } while (already_shot(&player_board, x, y));
-                bool is_hit = take_shot(&player_board, x, y);
-                animate_hit_miss(renderer, x, y, is_hit, 0, 0);
-                player_turn = true;
-            }
-
+        } else if (game_state == PLACING_SHIPS || game_state == PLAYING) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
 
@@ -343,7 +338,7 @@ int main() {
 
             SDL_RenderPresent(renderer);
 
-            if (player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
+            if (game_state == PLAYING && player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
                 game_over = true;
                 if (player_board.ships_remaining == 0) {
                     snprintf(winner, sizeof(winner), "Computer wins!");
@@ -353,6 +348,17 @@ int main() {
                 SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Game Over", winner, window);
                 save_game(&player_board, &computer_board);
                 quit = true;
+            }
+
+            if (!player_turn && game_state == PLAYING && !game_over) {
+                int x, y;
+                do {
+                    x = rand() % BOARD_SIZE;
+                    y = rand() % BOARD_SIZE;
+                } while (already_shot(&player_board, x, y));
+                bool is_hit = take_shot(&player_board, x, y);
+                animate_hit_miss(renderer, x, y, is_hit, 0, 0);
+                player_turn = true;
             }
         }
     }
