@@ -181,10 +181,14 @@ void save_game(Board* player_board, Board* computer_board) {
         printf("Error opening file for saving.\n");
         return;
     }
-    fwrite(player_board, sizeof(Board), 1, file);
-    fwrite(computer_board, sizeof(Board), 1, file);
+    size_t written1 = fwrite(player_board, sizeof(Board), 1, file);
+    size_t written2 = fwrite(computer_board, sizeof(Board), 1, file);
+    if (written1 != 1 || written2 != 1) {
+        printf("Error writing to file.\n");
+    } else {
+        printf("Game saved successfully.\n");
+    }
     fclose(file);
-    printf("Game saved successfully.\n");
 }
 
 bool load_game(Board* player_board, Board* computer_board) {
@@ -193,10 +197,16 @@ bool load_game(Board* player_board, Board* computer_board) {
         printf("Error opening file for loading.\n");
         return false;
     }
-    fread(player_board, sizeof(Board), 1, file);
-    fread(computer_board, sizeof(Board), 1, file);
+    size_t read1 = fread(player_board, sizeof(Board), 1, file);
+    size_t read2 = fread(computer_board, sizeof(Board), 1, file);
+    if (read1 != 1 || read2 != 1) {
+        printf("Error reading from file.\n");
+        fclose(file);
+        return false;
+    } else {
+        printf("Game loaded successfully.\n");
+    }
     fclose(file);
-    printf("Game loaded successfully.\n");
     return true;
 }
 
