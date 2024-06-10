@@ -243,7 +243,7 @@ int main() {
         return 1;
     }
 
-    TTF_Font* font = TTF_OpenFont("path/to/font.ttf", 24);
+    TTF_Font* font = TTF_OpenFont("assets/OpenSans-Regular.ttf", 24);
     if (font == NULL) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Cannot open font: %s", TTF_GetError());
         SDL_DestroyRenderer(renderer);
