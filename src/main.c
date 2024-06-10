@@ -173,10 +173,6 @@ void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit, int off
     SDL_RenderFillRect(renderer, &rect);
     SDL_RenderPresent(renderer);
     SDL_Delay(100);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderFillRect(renderer, &rect);
-    SDL_RenderPresent(renderer);
-    SDL_Delay(100);
 }
 
 void save_game(Board* player_board, Board* computer_board) {
@@ -209,6 +205,17 @@ void render_menu(SDL_Renderer* renderer, TTF_Font* font) {
     render_text(renderer, font, "1. Start New Game", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 50);
     render_text(renderer, font, "2. Load Game", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2);
     SDL_RenderPresent(renderer);
+}
+
+bool handle_menu_click(int mouse_x, int mouse_y) {
+    if (mouse_x >= SCREEN_WIDTH / 2 - 100 && mouse_x <= SCREEN_WIDTH / 2 + 100) {
+        if (mouse_y >= SCREEN_HEIGHT / 2 - 50 && mouse_y <= SCREEN_HEIGHT / 2 - 30) {
+            return 1; // Start New Game
+        } else if (mouse_y >= SCREEN_HEIGHT / 2 && mouse_y <= SCREEN_HEIGHT / 2 + 20) {
+            return 2; // Load Game
+        }
+    }
+    return 0;
 }
 
 void render_save_button(SDL_Renderer* renderer, TTF_Font* font) {
@@ -270,34 +277,29 @@ int main() {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit = true;
-            } else if (event.type == SDL_KEYDOWN) {
+            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int x = event.button.x / CELL_SIZE;
+                int y = event.button.y / CELL_SIZE;
                 if (game_state == MENU) {
-                    if (event.key.keysym.sym == SDLK_1) {
+                    int selection = handle_menu_click(event.button.x, event.button.y);
+                    if (selection == 1) {
                         game_state = PLAYING;
                         init_board(&player_board);
                         init_board(&computer_board);
                         place_computer_ships(&computer_board);
-                    } else if (event.key.keysym.sym == SDLK_2) {
+                    } else if (selection == 2) {
                         if (load_game(&player_board, &computer_board)) {
                             game_state = PLAYING;
                         }
                     }
-                }
-            } else if (event.type == SDL_MOUSEBUTTONDOWN && game_state == PLAYING) {
-                int x = event.button.x / CELL_SIZE;
-                int y = event.button.y / CELL_SIZE;
-
-                if (handle_save_button(event.button.x, event.button.y)) {
-                    save_game(&player_board, &computer_board);
-                    quit = true;
-                } else if (x >= BOARD_SIZE / 2 / CELL_SIZE) { // Ensure player cannot shoot on their own board
-                    if (player_turn) {
-                        if (player_board.ships_placed < MAX_SHIPS) {
-                            if (place_ship(&player_board, x, y) && player_board.ships_placed == MAX_SHIPS) {
-                                player_turn = false;
-                            }
-                        } else {
-                            bool is_hit = take_shot(&computer_board, x - (SCREEN_WIDTH / 2) / CELL_SIZE, y);
+                } else if (game_state == PLAYING) {
+                    if (handle_save_button(event.button.x, event.button.y)) {
+                        save_game(&player_board, &computer_board);
+                        quit = true;
+                    } else if (event.button.x >= SCREEN_WIDTH / 2) { // Ensure player cannot shoot on their own board
+                        x = (event.button.x - SCREEN_WIDTH / 2) / CELL_SIZE;
+                        if (player_turn && player_board.ships_placed == MAX_SHIPS && y < BOARD_SIZE) {
+                            bool is_hit = take_shot(&computer_board, x, y);
                             animate_hit_miss(renderer, x, y, is_hit, SCREEN_WIDTH / 2, 0);
                             player_turn = false;
                         }
