@@ -184,6 +184,7 @@ void save_game(Board* player_board, Board* computer_board) {
     fwrite(player_board, sizeof(Board), 1, file);
     fwrite(computer_board, sizeof(Board), 1, file);
     fclose(file);
+    printf("Game saved successfully.\n");
 }
 
 bool load_game(Board* player_board, Board* computer_board) {
@@ -195,6 +196,7 @@ bool load_game(Board* player_board, Board* computer_board) {
     fread(player_board, sizeof(Board), 1, file);
     fread(computer_board, sizeof(Board), 1, file);
     fclose(file);
+    printf("Game loaded successfully.\n");
     return true;
 }
 
