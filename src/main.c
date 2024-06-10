@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
@@ -17,6 +18,8 @@ typedef struct {
     int ships_remaining;
     int ships_placed;
 } Board;
+
+typedef enum { MENU, PLAYING } GameState;
 
 void init_board(Board* board) {
     for (int i = 0; i < BOARD_SIZE; ++i) {
@@ -55,6 +58,21 @@ void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset
             SDL_RenderDrawRect(renderer, &cell_rect);
         }
     }
+}
+
+void render_text(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x, int y) {
+    SDL_Color color = { 255, 255, 255, 255 };
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text, color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    int text_width = surface->w;
+    int text_height = surface->h;
+    SDL_Rect render_quad = { x, y, text_width, text_height };
+
+    SDL_RenderCopy(renderer, texture, NULL, &render_quad);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
 }
 
 bool place_ship(Board* board, int x, int y) {
@@ -147,11 +165,66 @@ void place_computer_ships(Board* board) {
     fclose(file);
 }
 
+void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit) {
+    SDL_Rect rect = { x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+    SDL_Color color = is_hit ? (SDL_Color){255, 0, 0, 255} : (SDL_Color){255, 255, 255, 255}; // Red for hit, White for miss
+
+    for (int i = 0; i < 5; ++i) {
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(100); // Delay for animation effect
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(100);
+    }
+}
+
+void save_game(Board* player_board, Board* computer_board) {
+    FILE* file = fopen("savegame.dat", "wb");
+    if (file == NULL) {
+        printf("Error opening file for saving.\n");
+        return;
+    }
+    fwrite(player_board, sizeof(Board), 1, file);
+    fwrite(computer_board, sizeof(Board), 1, file);
+    fclose(file);
+}
+
+bool load_game(Board* player_board, Board* computer_board) {
+    FILE* file = fopen("savegame.dat", "rb");
+    if (file == NULL) {
+        printf("Error opening file for loading.\n");
+        return false;
+    }
+    fread(player_board, sizeof(Board), 1, file);
+    fread(computer_board, sizeof(Board), 1, file);
+    fclose(file);
+    return true;
+}
+
+void render_menu(SDL_Renderer* renderer, TTF_Font* font) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    render_text(renderer, font, "Battleship Game", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100);
+    render_text(renderer, font, "1. Start New Game", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 50);
+    render_text(renderer, font, "2. Load Game", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2);
+    SDL_RenderPresent(renderer);
+}
+
 int main() {
     srand(time(NULL)); // Initialize random seed
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Cannot initialize SDL: %s", SDL_GetError());
+        return 1;
+    }
+
+    if (TTF_Init() < 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Cannot initialize SDL_ttf: %s", TTF_GetError());
+        SDL_Quit();
         return 1;
     }
 
@@ -170,11 +243,17 @@ int main() {
         return 1;
     }
 
-    Board player_board, computer_board;
-    init_board(&player_board);
-    init_board(&computer_board);
+    TTF_Font* font = TTF_OpenFont("path/to/font.ttf", 24);
+    if (font == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Cannot open font: %s", TTF_GetError());
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
 
-    place_computer_ships(&computer_board);
+    GameState game_state = MENU;
+    Board player_board, computer_board;
 
     bool quit = false;
     bool player_turn = true;
@@ -186,7 +265,20 @@ int main() {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit = true;
-            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+            } else if (event.type == SDL_KEYDOWN) {
+                if (game_state == MENU) {
+                    if (event.key.keysym.sym == SDLK_1) {
+                        game_state = PLAYING;
+                        init_board(&player_board);
+                        init_board(&computer_board);
+                        place_computer_ships(&computer_board);
+                    } else if (event.key.keysym.sym == SDLK_2) {
+                        if (load_game(&player_board, &computer_board)) {
+                            game_state = PLAYING;
+                        }
+                    }
+                }
+            } else if (event.type == SDL_MOUSEBUTTONDOWN && game_state == PLAYING) {
                 int x = event.button.x / CELL_SIZE;
                 int y = event.button.y / CELL_SIZE;
                 if (player_turn) {
@@ -195,49 +287,67 @@ int main() {
                             player_turn = false; // Switch to computer's turn after placing all ships
                         }
                     } else {
-                        if (take_shot(&computer_board, x - (SCREEN_WIDTH / 2) / CELL_SIZE, y)) {
-                            player_turn = false; // Switch to computer's turn
-                        }
+                        bool is_hit = take_shot(&computer_board, x - (SCREEN_WIDTH / 2) / CELL_SIZE, y);
+                        animate_hit_miss(renderer, x, y, is_hit);
+                        player_turn = false; // Switch to computer's turn
                     }
                 }
             }
         }
 
-        if (!player_turn && player_board.ships_placed == MAX_SHIPS && !game_over) {
-            // Computer's turn to take a shot
-            int x, y;
-            do {
-                x = rand() % BOARD_SIZE;
-                y = rand() % BOARD_SIZE;
-            } while (already_shot(&player_board, x, y));
-            if (take_shot(&player_board, x, y)) {
+        if (game_state == MENU) {
+            render_menu(renderer, font);
+        } else if (game_state == PLAYING) {
+            if (!player_turn && player_board.ships_placed == MAX_SHIPS && !game_over) {
+                // Computer's turn to take a shot
+                int x, y;
+                do {
+                    x = rand() % BOARD_SIZE;
+                    y = rand() % BOARD_SIZE;
+                } while (already_shot(&player_board, x, y));
+                bool is_hit = take_shot(&player_board, x, y);
+                animate_hit_miss(renderer, x + (SCREEN_WIDTH / 2) / CELL_SIZE, y, is_hit);
                 player_turn = true; // Switch back to player's turn
             }
-        }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            SDL_RenderClear(renderer);
 
-        render_board(renderer, &player_board, 0, 0, false);
-        render_board(renderer, &computer_board, SCREEN_WIDTH / 2, 0, true);
+            render_board(renderer, &player_board, 0, 0, false);
+            render_board(renderer, &computer_board, SCREEN_WIDTH / 2, 0, true);
 
-        SDL_RenderPresent(renderer);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderDrawLine(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
 
-        // Check for game over
-        if (player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
-            game_over = true;
-            if (player_board.ships_remaining == 0) {
-                snprintf(winner, sizeof(winner), "Computer wins!");
-            } else {
-                snprintf(winner, sizeof(winner), "Player wins!");
+            char player_ships[50];
+            char computer_ships[50];
+            snprintf(player_ships, sizeof(player_ships), "Player Ships Remaining: %d", player_board.ships_remaining);
+            snprintf(computer_ships, sizeof(computer_ships), "Computer Ships Remaining: %d", computer_board.ships_remaining);
+
+            render_text(renderer, font, player_ships, 10, SCREEN_HEIGHT - 30);
+            render_text(renderer, font, computer_ships, SCREEN_WIDTH / 2 + 10, SCREEN_HEIGHT - 30);
+
+            SDL_RenderPresent(renderer);
+
+            // Check for game over
+            if (player_board.ships_remaining == 0 || computer_board.ships_remaining == 0) {
+                game_over = true;
+                if (player_board.ships_remaining == 0) {
+                    snprintf(winner, sizeof(winner), "Computer wins!");
+                } else {
+                    snprintf(winner, sizeof(winner), "Player wins!");
+                }
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Game Over", winner, window);
+                save_game(&player_board, &computer_board);
+                quit = true;
             }
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Game Over", winner, window);
-            quit = true;
         }
     }
 
+    TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
 
     return 0;
