@@ -1,4 +1,4 @@
-Battleships game in SFML 🛥️🚤🏴‍☠️🦜
+Battleships game in SDL 🛥️🚤🏴‍☠️🦜
 
 Hubert Rutkowski && Mateusz Kazmierczak
 
