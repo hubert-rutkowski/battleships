@@ -294,14 +294,14 @@ int main() {
             case 0:
                 player_turn = false;
                 if(player_board.ships_remaining == 0) {
-                    snprintf("Computer wins!");
+                    //snprintf("Computer wins!");
                     game_state = MENU;
                 }
                 break;
             case 1:
             animate_hit_miss(renderer, board_x, board_y, computer_board.cells[board_y][board_x] == HIT, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING);
                 if (computer_board.ships_remaining == 0) {
-                    snprintf("Player wins!");
+                    //snprintf("Player wins!");
                     game_state = MENU;
                 }
                 break;
