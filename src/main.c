@@ -27,6 +27,7 @@ void init_board(Board* board) {
         }
     }
     board->ships_placed = 0;
+    board->ships_remaining = 0;
 }
 
 bool place_ship(Board* board, int x, int y) {
@@ -300,23 +301,15 @@ int main() {
                         int board_x = (mouse_x - (SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE)) / CELL_SIZE;
                         int board_y = (mouse_y - PADDING) / CELL_SIZE;
 
-                        switch (take_shot(&computer_board, board_x, board_y)) {
-                            case -1:
-                                break;
-                            case 0:
+                        int result = take_shot(&computer_board, board_x, board_y);
+                        if (result != -1) {
+                            animate_hit_miss(renderer, board_x, board_y, result == 1, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING);
+                            if (computer_board.ships_remaining == 0) {
+                                snprintf(winner, sizeof(winner), "Player wins!");
+                                game_state = GAME_OVER;
+                            } else if (result == 0) {
                                 player_turn = false;
-                                if (player_board.ships_remaining == 0) {
-                                    snprintf(winner, sizeof(winner), "Computer wins!");
-                                    game_state = GAME_OVER;
-                                }
-                                break;
-                            case 1:
-                                animate_hit_miss(renderer, board_x, board_y, computer_board.cells[board_y][board_x] == HIT, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING);
-                                if (computer_board.ships_remaining == 0) {
-                                    snprintf(winner, sizeof(winner), "Player wins!");
-                                    game_state = GAME_OVER;
-                                }
-                                break;
+                            }
                         }
                     }
                 } else if (game_state == GAME_OVER) {
@@ -355,13 +348,9 @@ int main() {
                 int x = rand() % BOARD_SIZE;
                 int y = rand() % BOARD_SIZE;
                 if (!already_shot(&player_board, x, y)) {
-                    bool is_hit = take_shot(&player_board, x, y);
-                    if (is_hit == 1) {
-                        animate_hit_miss(renderer, x, y, true, PADDING, PADDING);
-                        computer_hit = true;
-                    } else {
-                        computer_hit = false;
-                    }
+                    int result = take_shot(&player_board, x, y);
+                    animate_hit_miss(renderer, x, y, result == 1, PADDING, PADDING);
+                    computer_hit = (result == 1);
 
                     if (player_board.ships_remaining == 0) {
                         snprintf(winner, sizeof(winner), "Computer wins!");
