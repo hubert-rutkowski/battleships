@@ -195,9 +195,9 @@ bool already_shot(Board* board, int x, int y) {
     return board->cells[y][x] == MISS || board->cells[y][x] == HIT;
 }
 
-void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit, int offset_x, int offset_y) {
+void animate_hit(SDL_Renderer* renderer, int x, int y, int offset_x, int offset_y) {
     SDL_Rect rect = { offset_x + x * CELL_SIZE, offset_y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
-    SDL_Color color = is_hit ? (SDL_Color){255, 0, 0, 255} : (SDL_Color){255, 255, 255, 255};
+    SDL_Color color = {255, 0, 0, 255};
 
     for (int i = 0; i < 5; ++i) {
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -303,7 +303,9 @@ int main() {
 
                         int result = take_shot(&computer_board, board_x, board_y);
                         if (result != -1) {
-                            animate_hit_miss(renderer, board_x, board_y, result == 1, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING);
+                            if (result == 1) {
+                                animate_hit(renderer, board_x, board_y, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING);
+                            }
                             if (computer_board.ships_remaining == 0) {
                                 snprintf(winner, sizeof(winner), "Player wins!");
                                 game_state = GAME_OVER;
@@ -349,8 +351,12 @@ int main() {
                 int y = rand() % BOARD_SIZE;
                 if (!already_shot(&player_board, x, y)) {
                     int result = take_shot(&player_board, x, y);
-                    animate_hit_miss(renderer, x, y, result == 1, PADDING, PADDING);
-                    computer_hit = (result == 1);
+                    if (result == 1) {
+                        animate_hit(renderer, x, y, PADDING, PADDING);
+                        computer_hit = true;
+                    } else {
+                        computer_hit = false;
+                    }
 
                     if (player_board.ships_remaining == 0) {
                         snprintf(winner, sizeof(winner), "Computer wins!");
