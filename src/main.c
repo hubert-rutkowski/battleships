@@ -206,13 +206,19 @@ bool already_shot(Board* board, int x, int y) {
     return board->cells[y][x] == MISS || board->cells[y][x] == HIT;
 }
 
-void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool hit, int offset_x, int offset_y) {
-    SDL_Delay(50);
+void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit, int offset_x, int offset_y) {
+    SDL_Rect rect = { offset_x + x * CELL_SIZE, offset_y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+    SDL_Color color = is_hit ? (SDL_Color){255, 0, 0, 255} : (SDL_Color){255, 255, 255, 255};
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_RenderPresent(renderer);
+    SDL_Delay(100);
 }
 
 void render_game_over_menu(SDL_Renderer* renderer, TTF_Font* font, const char* winner) {
     render_text(renderer, font, winner, SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 60);
-    render_text(renderer, font, "Play again!", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2);
+    render_text(renderer, font, "Play again", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2);
     render_text(renderer, font, "Exit", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 30);
 }
 
