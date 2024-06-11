@@ -239,6 +239,15 @@ int handle_game_over_click(int mouse_x, int mouse_y) {
     return 0;
 }
 
+void render_ships_remaining(SDL_Renderer* renderer, TTF_Font* font, int player_ships, int computer_ships) {
+    char player_ships_text[50];
+    char computer_ships_text[50];
+    snprintf(player_ships_text, sizeof(player_ships_text), "Player Ships Remaining: %d", player_ships);
+    snprintf(computer_ships_text, sizeof(computer_ships_text), "Computer Ships Remaining: %d", computer_ships);
+    render_text(renderer, font, player_ships_text, 10, SCREEN_HEIGHT - 40);
+    render_text(renderer, font, computer_ships_text, SCREEN_WIDTH - 250, SCREEN_HEIGHT - 40);
+}
+
 int main() {
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
@@ -343,6 +352,7 @@ int main() {
             render_board(renderer, &computer_board, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING, true);
             if (game_state == PLAYING) {
                 render_save_button(renderer, font);
+                render_ships_remaining(renderer, font, player_board.ships_remaining, computer_board.ships_remaining);
             }
         } else if (game_state == GAME_OVER) {
             render_game_over_menu(renderer, font, winner);
