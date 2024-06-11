@@ -146,7 +146,7 @@ void place_computer_ships(Board* board) {
             for (int j = 0; j < ship_lengths[i]; j++) {
                 int ship_x = x + (direction == 0 ? j : 0);
                 int ship_y = y + (direction == 1 ? j : 0);
-                if (ship_x < 0 || ship_x >= BOARD_SIZE || ship_y < 0 || ship_y >= BOARD_SIZE || board->cells[ship_y][ship_x] != EMPTY) {
+                if (ship_x < 0 || ship_y < 0 || ship_x >= BOARD_SIZE || ship_y >= BOARD_SIZE || board->cells[ship_y][ship_x] != EMPTY) {
                     can_place = false;
                     break;
                 }
@@ -210,10 +210,16 @@ void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit, int off
     SDL_Rect rect = { offset_x + x * CELL_SIZE, offset_y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
     SDL_Color color = is_hit ? (SDL_Color){255, 0, 0, 255} : (SDL_Color){255, 255, 255, 255};
 
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_RenderFillRect(renderer, &rect);
-    SDL_RenderPresent(renderer);
-    SDL_Delay(100);
+    for (int i = 0; i < 5; ++i) {
+        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(100);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(100);
+    }
 }
 
 void render_game_over_menu(SDL_Renderer* renderer, TTF_Font* font, const char* winner) {
