@@ -48,23 +48,11 @@ int take_shot(Board* board, int x, int y) {
     if (board->cells[y][x] == SHIP) {
         board->cells[y][x] = HIT;
         board->ships_remaining--;
-        return true;
+        return 1;
     } else {
         board->cells[y][x] = MISS;
-        return false;
+        return 0;
     }
-}
-
-void computer_take_shot(Board* player_board) {
-    int board_x = rand() % BOARD_SIZE;
-    int board_y = rand() % BOARD_SIZE;
-
-    while (player_board->cells[board_y][board_x] != EMPTY) {
-        board_x = rand() % BOARD_SIZE;
-        board_y = rand() % BOARD_SIZE;
-    }
-
-    take_shot(player_board, board_x, board_y);
 }
 
 void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset_y, bool hide_ships) {
@@ -362,21 +350,27 @@ int main() {
 
         if (!player_turn && game_state == PLAYING) {
             SDL_Delay(500);
-            int x, y;
+            bool computer_hit = false;
             do {
-                x = rand() % BOARD_SIZE;
-                y = rand() % BOARD_SIZE;
-            } while (already_shot(&player_board, x, y));
-            bool is_hit = take_shot(&player_board, x, y);
-            if (is_hit) {
-                animate_hit_miss(renderer, x, y, is_hit, PADDING, PADDING);
-            }
-            if (player_board.ships_remaining == 0) {
-                snprintf(winner, sizeof(winner), "Computer wins!");
-                game_state = GAME_OVER;
-            } else {
-                player_turn = true;
-            }
+                int x = rand() % BOARD_SIZE;
+                int y = rand() % BOARD_SIZE;
+                if (!already_shot(&player_board, x, y)) {
+                    bool is_hit = take_shot(&player_board, x, y);
+                    if (is_hit == 1) {
+                        animate_hit_miss(renderer, x, y, true, PADDING, PADDING);
+                        computer_hit = true;
+                    } else {
+                        computer_hit = false;
+                    }
+
+                    if (player_board.ships_remaining == 0) {
+                        snprintf(winner, sizeof(winner), "Computer wins!");
+                        game_state = GAME_OVER;
+                    }
+                }
+            } while (computer_hit && game_state == PLAYING);
+
+            player_turn = true;
         }
     }
 
