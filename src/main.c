@@ -21,6 +21,26 @@ typedef struct {
 
 typedef enum { MENU, PLACING_SHIPS, PLAYING } GameState;
 
+void init_board(Board* board);
+void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset_y, bool hide_ships);
+void render_text(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x, int y);
+bool place_ship(Board* board, int x, int y);
+bool take_shot(Board* board, int x, int y);
+bool already_shot(Board* board, int x, int y);
+bool can_place_ship(Board* board, int x, int y, int size, bool horizontal);
+void place_ship_at(Board* board, int x, int y, int size, bool horizontal, FILE* file);
+void random_place_ship(Board* board, int ship_size, FILE* file);
+void place_computer_ships(Board* board);
+void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool is_hit, int offset_x, int offset_y);
+void save_game(Board* player_board, Board* computer_board);
+bool load_game(Board* player_board, Board* computer_board);
+void render_menu(SDL_Renderer* renderer, TTF_Font* font);
+bool handle_menu_click(int mouse_x, int mouse_y);
+void render_save_button(SDL_Renderer* renderer, TTF_Font* font);
+bool handle_save_button(int mouse_x, int mouse_y);
+
+int main();
+
 void init_board(Board* board) {
     for (int i = 0; i < BOARD_SIZE; ++i) {
         for (int j = 0; j < BOARD_SIZE; ++j) {
@@ -84,8 +104,15 @@ bool place_ship(Board* board, int x, int y) {
     return true;
 }
 
+bool already_shot(Board* board, int x, int y) {
+    return board->cells[y][x] == HIT || board->cells[y][x] == MISS;
+}
+
 bool take_shot(Board* board, int x, int y) {
     if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) {
+        return false;
+    }
+    if (already_shot(board, x, y)) {
         return false;
     }
     if (board->cells[y][x] == SHIP) {
@@ -99,9 +126,6 @@ bool take_shot(Board* board, int x, int y) {
     return false;
 }
 
-bool already_shot(Board* board, int x, int y) {
-    return board->cells[y][x] == HIT || board->cells[y][x] == MISS;
-}
 
 bool can_place_ship(Board* board, int x, int y, int size, bool horizontal) {
     if (horizontal) {
@@ -313,16 +337,16 @@ int main() {
                 } else if (game_state == PLAYING) {
                     if (handle_save_button(event.button.x, event.button.y)) {
                         save_game(&player_board, &computer_board);
-                        quit = true;
+                    quit = true;
                     } else if (event.button.x >= SCREEN_WIDTH / 2 && y < BOARD_SIZE) {
                         x = (event.button.x - SCREEN_WIDTH / 2) / CELL_SIZE;
-                        if (player_turn) {
+                        if (player_turn && !already_shot(&computer_board, x, y)) {
                             bool is_hit = take_shot(&computer_board, x, y);
                             animate_hit_miss(renderer, x, y, is_hit, SCREEN_WIDTH / 2, 0);
                             player_turn = false;
-                        }
-                    }
-                }
+        }
+    }
+}
             }
         }
 
@@ -372,6 +396,7 @@ int main() {
                 animate_hit_miss(renderer, x, y, is_hit, 0, 0);
                 player_turn = true;
             }
+
         }
     }
 
