@@ -120,7 +120,7 @@ int handle_menu_click(int mouse_x, int mouse_y) {
 }
 
 void render_save_button(SDL_Renderer* renderer, TTF_Font* font) {
-    render_text(renderer, font, "Save Game", SCREEN_WIDTH - 120, 10);
+    render_text(renderer, font, "Save Game", SCREEN_WIDTH - 160, 10);
 }
 
 bool handle_save_button(int mouse_x, int mouse_y) {
