@@ -245,7 +245,7 @@ void render_ships_remaining(SDL_Renderer* renderer, TTF_Font* font, int player_s
     snprintf(player_ships_text, sizeof(player_ships_text), "Player Ships Remaining: %d", player_ships);
     snprintf(computer_ships_text, sizeof(computer_ships_text), "Computer Ships Remaining: %d", computer_ships);
     render_text(renderer, font, player_ships_text, 10, SCREEN_HEIGHT - 40);
-    render_text(renderer, font, computer_ships_text, SCREEN_WIDTH - 250, SCREEN_HEIGHT - 40);
+    render_text(renderer, font, computer_ships_text, SCREEN_WIDTH - 290, SCREEN_HEIGHT - 40);
 }
 
 int main() {
