@@ -101,9 +101,9 @@ void render_text(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x
 }
 
 void render_menu(SDL_Renderer* renderer, TTF_Font* font) {
-    render_text(renderer, font, "1. New Game", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 30);
-    render_text(renderer, font, "2. Load Game", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2);
-    render_text(renderer, font, "3. Quit", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 30);
+    render_text(renderer, font, "New Game", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 30);
+    render_text(renderer, font, "Load Game", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2);
+    render_text(renderer, font, "Quit", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 30);
 }
 
 int handle_menu_click(int mouse_x, int mouse_y) {
@@ -212,8 +212,8 @@ void animate_hit_miss(SDL_Renderer* renderer, int x, int y, bool hit, int offset
 
 void render_game_over_menu(SDL_Renderer* renderer, TTF_Font* font, const char* winner) {
     render_text(renderer, font, winner, SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 60);
-    render_text(renderer, font, "1. Menu", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2);
-    render_text(renderer, font, "2. Exit", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 30);
+    render_text(renderer, font, "Play again!", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2);
+    render_text(renderer, font, "Exit", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 + 30);
 }
 
 int handle_game_over_click(int mouse_x, int mouse_y) {
