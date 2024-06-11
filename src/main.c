@@ -176,7 +176,7 @@ void place_computer_ships(Board* board) {
 }
 
 bool load_game(Board* player_board, Board* computer_board) {
-    FILE* file = fopen("battleship_save.dat", "rb");
+    FILE* file = fopen("battleships_save.dat", "rb");
     if (file == NULL) {
         return false;
     }
@@ -189,7 +189,7 @@ bool load_game(Board* player_board, Board* computer_board) {
 }
 
 void save_game(Board* player_board, Board* computer_board) {
-    FILE* file = fopen("battleship_save.dat", "wb");
+    FILE* file = fopen("battleships_save.dat", "wb");
     if (file == NULL) {
         printf("Failed to save game.\n");
         return;
@@ -243,7 +243,7 @@ int main() {
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
-    SDL_Window* window = SDL_CreateWindow("Battleship Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("Battleships Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     TTF_Font* font = TTF_OpenFont("assets/OpenSans-Regular.ttf", 24);
