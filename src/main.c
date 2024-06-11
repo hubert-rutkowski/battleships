@@ -137,7 +137,7 @@ bool handle_save_button(int mouse_x, int mouse_y) {
 }
 
 void place_computer_ships(Board* board) {
-    int ship_lengths[] = {5, 4, 3, 2}; // The lengths of the ships to place
+    int ship_lengths[] = {4, 3, 3}; // The lengths of the ships to place
     int num_ships = sizeof(ship_lengths) / sizeof(ship_lengths[0]); // The number of ships to place
     int sum_lengths = 0;
     for(int i = 0; i < num_ships; i++) {
