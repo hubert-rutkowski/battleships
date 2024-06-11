@@ -357,8 +357,10 @@ int main() {
                 x = rand() % BOARD_SIZE;
                 y = rand() % BOARD_SIZE;
             } while (already_shot(&player_board, x, y));
-            take_shot(&player_board, x, y);
-            animate_hit_miss(renderer, x, y, player_board.cells[y][x] == HIT, PADDING, PADDING);
+            bool is_hit = take_shot(&player_board, x, y);
+            if (is_hit) {
+                animate_hit_miss(renderer, x, y, is_hit, PADDING, PADDING);
+            }
             if (player_board.ships_remaining == 0) {
                 snprintf(winner, sizeof(winner), "Computer wins!");
                 game_state = GAME_OVER;
