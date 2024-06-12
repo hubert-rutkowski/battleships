@@ -55,7 +55,7 @@ int take_shot(Board* board, int x, int y) {
     }
 }
 
-bool computer_take_shot(Board* player_board) {
+void computer_take_shot(Board* player_board) {
     int board_x = rand() % BOARD_SIZE;
     int board_y = rand() % BOARD_SIZE;
 
@@ -64,7 +64,7 @@ bool computer_take_shot(Board* player_board) {
         board_y = rand() % BOARD_SIZE;
     }
 
-    return take_shot(player_board, board_x, board_y);
+    take_shot(player_board, board_x, board_y);
 }
 
 void render_board(SDL_Renderer* renderer, Board* board, int offset_x, int offset_y, bool hide_ships) {
@@ -362,21 +362,21 @@ int main() {
 
         if (!player_turn && game_state == PLAYING) {
             SDL_Delay(500);
-            bool computer_hit;
+            int x, y;
             do {
-                int x, y;
-                do {
-                    x = rand() % BOARD_SIZE;
-                    y = rand() % BOARD_SIZE;
-                } while (already_shot(&player_board, x, y));
-                computer_hit = take_shot(&player_board, x, y);
-                animate_hit_miss(renderer, x, y, computer_hit, PADDING, PADDING);
-                if (player_board.ships_remaining == 0) {
-                    snprintf(winner, sizeof(winner), "Computer wins!");
-                    game_state = GAME_OVER;
-                }
-            } while (computer_hit && game_state == PLAYING);
-            player_turn = true;
+                x = rand() % BOARD_SIZE;
+                y = rand() % BOARD_SIZE;
+            } while (already_shot(&player_board, x, y));
+            bool is_hit = take_shot(&player_board, x, y);
+            if (is_hit) {
+                animate_hit_miss(renderer, x, y, is_hit, PADDING, PADDING);
+            }
+            if (player_board.ships_remaining == 0) {
+                snprintf(winner, sizeof(winner), "Computer wins!");
+                game_state = GAME_OVER;
+            } else {
+                player_turn = true;
+            }
         }
     }
 
