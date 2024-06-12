@@ -135,7 +135,7 @@ void place_computer_ships(Board* board) {
         sum_lengths += ship_lengths[i];
     }
     board->ships_remaining = sum_lengths;
-    for (int i = 0; num_ships; i++) {
+    for (int i = 0; i < num_ships; i++) {
         bool ship_placed = false;
         while (!ship_placed) {
             int x = rand() % BOARD_SIZE;
@@ -312,17 +312,13 @@ int main() {
                         int board_x = (mouse_x - (SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE)) / CELL_SIZE;
                         int board_y = (mouse_y - PADDING) / CELL_SIZE;
 
-                        if (board_x >= 0 && board_x < BOARD_SIZE && board_y >= 0 && board_y < BOARD_SIZE) {
-                            int result = take_shot(&computer_board, board_x, board_y);
-                            if (result != -1) {
-                                animate_hit_miss(renderer, board_x, board_y, result, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING);
-                                if (result == 1 && computer_board.ships_remaining == 0) {
-                                    snprintf(winner, sizeof(winner), "Player wins!");
-                                    game_state = GAME_OVER;
-                                } else {
-                                    player_turn = false;
-                                }
+                        if (take_shot(&computer_board, board_x, board_y) != -1) {
+                            animate_hit_miss(renderer, board_x, board_y, computer_board.cells[board_y][board_x] == HIT, SCREEN_WIDTH - PADDING - BOARD_SIZE * CELL_SIZE, PADDING);
+                            if (computer_board.ships_remaining == 0) {
+                                snprintf(winner, sizeof(winner), "Player wins!");
+                                game_state = GAME_OVER;
                             }
+                            player_turn = false;
                         }
                     }
                 } else if (game_state == GAME_OVER) {
@@ -362,9 +358,7 @@ int main() {
                 y = rand() % BOARD_SIZE;
             } while (already_shot(&player_board, x, y));
             bool is_hit = take_shot(&player_board, x, y);
-            if (is_hit) {
-                animate_hit_miss(renderer, x, y, is_hit, PADDING, PADDING);
-            }
+            animate_hit_miss(renderer, x, y, is_hit, PADDING, PADDING);
             if (player_board.ships_remaining == 0) {
                 snprintf(winner, sizeof(winner), "Computer wins!");
                 game_state = GAME_OVER;
