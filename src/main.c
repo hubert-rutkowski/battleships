@@ -370,6 +370,7 @@ int main() {
             bool is_hit = take_shot(&player_board, x, y);
             if (is_hit) {
                 animate_hit_miss(renderer, x, y, is_hit, PADDING, PADDING);
+                player_turn = false;
             }
             if (player_board.ships_remaining == 0) {
                 snprintf(winner, sizeof(winner), "Computer wins!");
