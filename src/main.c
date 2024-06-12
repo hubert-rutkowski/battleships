@@ -374,6 +374,7 @@ int main() {
             if (player_board.ships_remaining == 0) {
                 snprintf(winner, sizeof(winner), "Computer wins!");
                 game_state = GAME_OVER;
+            }
             if (is_hit) {
                 player_turn = false;
             }
